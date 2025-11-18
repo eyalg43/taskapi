@@ -1,6 +1,9 @@
 package com.example.taskapi.service;
 
 import com.example.taskapi.model.Task;
+import com.example.taskapi.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -10,37 +13,27 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class TaskService {
 
-    // in memory storage
-    private List<Task> tasks = new ArrayList<>();
-
-    // auto-incrementing ID
-    private AtomicLong idCounter = new AtomicLong(1);
+    @Autowired
+    private TaskRepository taskRepository;
 
     // get all task
     public List<Task> getAllTasks() {
-        return new ArrayList<>(tasks); // Return copy to avoid external modification
+        return taskRepository.findAll();
     }
 
     // get task by ID
     public Task getTaskById(Long id) {
-        for (Task task: tasks) {
-            if (task.getId().equals(id)) {
-                return task;
-            }
-        }
-        return null;
+        return taskRepository.findById(id).orElse(null);
     }
 
     // create new task
     public Task createTask(Task task) {
-        task.setId(idCounter.getAndIncrement());
-        tasks.add(task);
-        return task;
+        return taskRepository.save(task);
     }
 
     // update existing tasks
     public Task updateTask(Long id, Task updateTask) {
-        Task existingTask = getTaskById(id);
+        Task existingTask = taskRepository.findById(id).orElse(null);
         if (existingTask == null) {
             return null; // task not found
         }
@@ -48,12 +41,16 @@ public class TaskService {
         existingTask.setDescription(updateTask.getDescription());
         existingTask.setCompleted(updateTask.getCompleted());
 
-        return existingTask;
+        return taskRepository.save(existingTask);
     }
 
     // delete task
     public boolean deleteTask(Long id) {
-        return tasks.removeIf(task -> task.getId().equals(id));
+        if (taskRepository.existsById(id)) {
+            taskRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
 
