@@ -1,4 +1,4 @@
-package com.example.taskapi.contoller;
+package com.example.taskapi.controller;
 
 import org.springframework.web.bind.annotation.*;
 

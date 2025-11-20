@@ -1,4 +1,4 @@
-package com.example.taskapi.contoller;
+package com.example.taskapi.controller;
 
 import com.example.taskapi.model.Task;
 import com.example.taskapi.service.TaskService;
