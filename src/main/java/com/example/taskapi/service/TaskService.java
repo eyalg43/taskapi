@@ -1,14 +1,15 @@
 package com.example.taskapi.service;
 
 import com.example.taskapi.model.Task;
+import com.example.taskapi.model.User;
 import com.example.taskapi.repository.TaskRepository;
+import com.example.taskapi.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskService {
@@ -16,43 +17,67 @@ public class TaskService {
     @Autowired
     private TaskRepository taskRepository;
 
-    // get all task
+    @Autowired
+    private UserRepository userRepository;
+
+    // Get current logged-in user
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // Get all tasks for current user
     public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+        User currentUser = getCurrentUser();
+        return taskRepository.findAll().stream()
+                .filter(task -> task.getUser().getId().equals(currentUser.getId()))
+                .collect(Collectors.toList());
     }
 
-    // get task by ID
+    // Get task by ID (only if belongs to current user)
     public Task getTaskById(Long id) {
-        return taskRepository.findById(id).orElse(null);
+        User currentUser = getCurrentUser();
+        Task task = taskRepository.findById(id).orElse(null);
+
+        if (task != null && task.getUser().getId().equals(currentUser.getId())) {
+            return task;
+        }
+        return null;
     }
 
-    // create new task
+    // Create new task for current user
     public Task createTask(Task task) {
+        User currentUser = getCurrentUser();
+        task.setUser(currentUser);  // Set owner
         return taskRepository.save(task);
     }
 
-    // update existing tasks
-    public Task updateTask(Long id, Task updateTask) {
+    // Update task (only if belongs to current user)
+    public Task updateTask(Long id, Task updatedTask) {
+        User currentUser = getCurrentUser();
         Task existingTask = taskRepository.findById(id).orElse(null);
-        if (existingTask == null) {
-            return null; // task not found
+
+        if (existingTask == null || !existingTask.getUser().getId().equals(currentUser.getId())) {
+            return null;
         }
-        existingTask.setTitle(updateTask.getTitle());
-        existingTask.setDescription(updateTask.getDescription());
-        existingTask.setCompleted(updateTask.getCompleted());
+
+        existingTask.setTitle(updatedTask.getTitle());
+        existingTask.setDescription(updatedTask.getDescription());
+        existingTask.setCompleted(updatedTask.isCompleted());
 
         return taskRepository.save(existingTask);
     }
 
-    // delete task
+    // Delete task (only if belongs to current user)
     public boolean deleteTask(Long id) {
-        if (taskRepository.existsById(id)) {
+        User currentUser = getCurrentUser();
+        Task task = taskRepository.findById(id).orElse(null);
+
+        if (task != null && task.getUser().getId().equals(currentUser.getId())) {
             taskRepository.deleteById(id);
             return true;
         }
         return false;
     }
-
-
-
 }
