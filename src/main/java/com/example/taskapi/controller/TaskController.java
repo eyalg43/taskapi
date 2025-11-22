@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// RestController Automatically converts objects to JSON
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -17,49 +16,30 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
 
-    // get /api/tasks - get all tasks
     @GetMapping
     public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+        return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    // get /api/tasks/{id} - get one task
     @GetMapping("/{id}")
     public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        Task task = taskService.getTaskById(id);
-        if (task == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(task);
+        return ResponseEntity.ok(taskService.getTaskById(id));
     }
 
-    // post /api/tasks - create new task
     @PostMapping
-    // RequestBody Converts JSON from request body to Java object
-    public ResponseEntity<Task> createNewTask(@RequestBody Task task) {
-        Task createdTask = taskService.createTask(task);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
+    public ResponseEntity<Task> createTask(@RequestBody Task task) {
+        Task created = taskService.createTask(task);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // put /api/tasks/{id} - update task
     @PutMapping("/{id}")
     public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task task) {
-        Task updatedTask = taskService.updateTask(id, task);
-        if (updatedTask == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(updatedTask);
+        return ResponseEntity.ok(taskService.updateTask(id, task));
     }
 
-    // delete /api/tasks/{id} - delete task
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        boolean deleted = taskService.deleteTask(id);
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
-        }
+        taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
     }
-
 }

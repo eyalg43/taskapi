@@ -1,5 +1,6 @@
 package com.example.taskapi.service;
 
+import com.example.taskapi.exception.ResourceNotFoundException;
 import com.example.taskapi.model.Task;
 import com.example.taskapi.model.User;
 import com.example.taskapi.repository.TaskRepository;
@@ -20,14 +21,14 @@ public class TaskService {
     @Autowired
     private UserRepository userRepository;
 
-    // Get current logged-in user
     private User getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String username = SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     }
 
-    // Get all tasks for current user
     public List<Task> getAllTasks() {
         User currentUser = getCurrentUser();
         return taskRepository.findAll().stream()
@@ -35,31 +36,33 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    // Get task by ID (only if belongs to current user)
     public Task getTaskById(Long id) {
         User currentUser = getCurrentUser();
-        Task task = taskRepository.findById(id).orElse(null);
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", id));
 
-        if (task != null && task.getUser().getId().equals(currentUser.getId())) {
-            return task;
+        // Check if task belongs to current user
+        if (!task.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Task", id);
         }
-        return null;
+
+        return task;
     }
 
-    // Create new task for current user
     public Task createTask(Task task) {
         User currentUser = getCurrentUser();
-        task.setUser(currentUser);  // Set owner
+        task.setUser(currentUser);
         return taskRepository.save(task);
     }
 
-    // Update task (only if belongs to current user)
     public Task updateTask(Long id, Task updatedTask) {
         User currentUser = getCurrentUser();
-        Task existingTask = taskRepository.findById(id).orElse(null);
+        Task existingTask = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", id));
 
-        if (existingTask == null || !existingTask.getUser().getId().equals(currentUser.getId())) {
-            return null;
+        // Check ownership
+        if (!existingTask.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Task", id);
         }
 
         existingTask.setTitle(updatedTask.getTitle());
@@ -69,15 +72,16 @@ public class TaskService {
         return taskRepository.save(existingTask);
     }
 
-    // Delete task (only if belongs to current user)
-    public boolean deleteTask(Long id) {
+    public void deleteTask(Long id) {
         User currentUser = getCurrentUser();
-        Task task = taskRepository.findById(id).orElse(null);
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", id));
 
-        if (task != null && task.getUser().getId().equals(currentUser.getId())) {
-            taskRepository.deleteById(id);
-            return true;
+        // Check ownership
+        if (!task.getUser().getId().equals(currentUser.getId())) {
+            throw new ResourceNotFoundException("Task", id);
         }
-        return false;
+
+        taskRepository.deleteById(id);
     }
 }
