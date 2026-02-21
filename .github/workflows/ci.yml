@@ -48,7 +48,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/taskdb
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
-          SPRING_DATA_MONGODB_URI: mongodb+srv://admin:admin123@cluster0.dj3tgtt.mongodb.net/notesdb?retryWrites=true&w=majority
+          SPRING_DATA_MONGODB_URI: ${{ secrets.MONGODB_URI }}
         run: mvn test
 
       - name: Build JAR
